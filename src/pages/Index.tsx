@@ -18,6 +18,7 @@ const Index = () => {
     lon: null,
   });
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
+  const [appError, setAppError] = useState<string | null>(null);
   const { weatherData, isLoading, error } = useWeather(
     coordinates.lat,
     coordinates.lon
@@ -31,11 +32,28 @@ const Index = () => {
         setCoordinates({ lat: latitude, lon: longitude });
       } catch (error) {
         console.error("Error fetching user's location:", error);
+        setAppError("Failed to fetch user's location");
       }
     };
 
     fetchUserLocation();
   }, []);
+
+  useEffect(() => {
+    if (error) {
+      if (!coordinates.lat || !coordinates.lon) {
+        setAppError(
+          "Please accept location permission to fetch weather data. Enable location access in your browser settings and refresh the page."
+        );
+      } else {
+        setAppError(
+          error.includes("location")
+            ? "Location permission denied. Please enable location access in your browser settings and refresh the page."
+            : "Failed to fetch weather data. Please check your internet connection or try again later."
+        );
+      }
+    }
+  }, [coordinates.lat, coordinates.lon, error]);
 
   const handleLocationSelect = (lat: number, lon: number) => {
     setCoordinates({ lat, lon });
@@ -96,11 +114,7 @@ const Index = () => {
             <div className="text-lg font-medium text-destructive mb-2">
               Error
             </div>
-            <p className="text-foreground/70">
-              {error.includes("coordinates")
-                ? "Failed to fetch coordinates for the selected location. Please try another city."
-                : "Failed to fetch weather data. Please check your internet connection or try again later."}
-            </p>
+            <p className="text-foreground/70">{appError}</p>
           </div>
         ) : weatherData ? (
           <div className="flex flex-col gap-6 animate-fade-in">
